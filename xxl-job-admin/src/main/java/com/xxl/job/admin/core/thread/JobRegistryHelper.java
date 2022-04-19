@@ -32,6 +32,7 @@ public class JobRegistryHelper {
 	public void start(){
 
 		// for registry or remove
+		//初始化 注册或删除 线程池
 		registryOrRemoveThreadPool = new ThreadPoolExecutor(
 				2,
 				10,
@@ -45,6 +46,7 @@ public class JobRegistryHelper {
 					}
 				},
 				new RejectedExecutionHandler() {
+					//注意:这里的拒绝策略就是再次执行...^_^'''
 					@Override
 					public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
 						r.run();
@@ -52,7 +54,8 @@ public class JobRegistryHelper {
 					}
 				});
 
-		// for monitor
+
+		//30秒执行一次,维护注册表信息， 判断在线超时时间90s
 		registryMonitorThread = new Thread(new Runnable() {
 			@Override
 			public void run() {
@@ -63,16 +66,19 @@ public class JobRegistryHelper {
 						if (groupList!=null && !groupList.isEmpty()) {
 
 							// remove dead address (admin/executor)
+							//从注册表中删除超时的机器
 							List<Integer> ids = XxlJobAdminConfig.getAdminConfig().getXxlJobRegistryDao().findDead(RegistryConfig.DEAD_TIMEOUT, new Date());
 							if (ids!=null && ids.size()>0) {
 								XxlJobAdminConfig.getAdminConfig().getXxlJobRegistryDao().removeDead(ids);
 							}
 
 							// fresh online address (admin/executor)
+							//获取所有在线机器
 							HashMap<String, List<String>> appAddressMap = new HashMap<String, List<String>>();
 							List<XxlJobRegistry> list = XxlJobAdminConfig.getAdminConfig().getXxlJobRegistryDao().findAll(RegistryConfig.DEAD_TIMEOUT, new Date());
 							if (list != null) {
 								for (XxlJobRegistry item: list) {
+									//将注册类型为EXECUTOR的XxlJobRegistry集合改装成appname=>设置触发器的ip地址
 									if (RegistryConfig.RegistType.EXECUTOR.name().equals(item.getRegistryGroup())) {
 										String appname = item.getRegistryKey();
 										List<String> registryList = appAddressMap.get(appname);
@@ -89,9 +95,11 @@ public class JobRegistryHelper {
 							}
 
 							// fresh group address
+							//更新xxl_job_group执行器地址列表
 							for (XxlJobGroup group: groupList) {
 								List<String> registryList = appAddressMap.get(group.getAppname());
 								String addressListStr = null;
+								//将所有配置触发器的ip地址，使用,拼接
 								if (registryList!=null && !registryList.isEmpty()) {
 									Collections.sort(registryList);
 									StringBuilder addressListSB = new StringBuilder();
@@ -101,7 +109,9 @@ public class JobRegistryHelper {
 									addressListStr = addressListSB.toString();
 									addressListStr = addressListStr.substring(0, addressListStr.length()-1);
 								}
+								//更新设置了触发器的ip地址
 								group.setAddressList(addressListStr);
+								;//更新修改时间
 								group.setUpdateTime(new Date());
 
 								XxlJobAdminConfig.getAdminConfig().getXxlJobGroupDao().update(group);
@@ -148,7 +158,7 @@ public class JobRegistryHelper {
 
 	public ReturnT<String> registry(RegistryParam registryParam) {
 
-		// valid
+		// valid 校验
 		if (!StringUtils.hasText(registryParam.getRegistryGroup())
 				|| !StringUtils.hasText(registryParam.getRegistryKey())
 				|| !StringUtils.hasText(registryParam.getRegistryValue())) {
@@ -156,13 +166,15 @@ public class JobRegistryHelper {
 		}
 
 		// async execute
+		//异步注册
 		registryOrRemoveThreadPool.execute(new Runnable() {
 			@Override
 			public void run() {
+				//更新修改时间
 				int ret = XxlJobAdminConfig.getAdminConfig().getXxlJobRegistryDao().registryUpdate(registryParam.getRegistryGroup(), registryParam.getRegistryKey(), registryParam.getRegistryValue(), new Date());
 				if (ret < 1) {
+					//说明暂未数据,才新增
 					XxlJobAdminConfig.getAdminConfig().getXxlJobRegistryDao().registrySave(registryParam.getRegistryGroup(), registryParam.getRegistryKey(), registryParam.getRegistryValue(), new Date());
-
 					// fresh
 					freshGroupRegistryInfo(registryParam);
 				}
@@ -187,7 +199,7 @@ public class JobRegistryHelper {
 			public void run() {
 				int ret = XxlJobAdminConfig.getAdminConfig().getXxlJobRegistryDao().registryDelete(registryParam.getRegistryGroup(), registryParam.getRegistryKey(), registryParam.getRegistryValue());
 				if (ret > 0) {
-					// fresh
+					// fresh 空实现
 					freshGroupRegistryInfo(registryParam);
 				}
 			}

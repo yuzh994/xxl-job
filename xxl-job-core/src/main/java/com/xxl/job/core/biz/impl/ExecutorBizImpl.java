@@ -46,18 +46,24 @@ public class ExecutorBizImpl implements ExecutorBiz {
     @Override
     public ReturnT<String> run(TriggerParam triggerParam) {
         // load old：jobHandler + jobThread
+        //获取job绑定线程
         JobThread jobThread = XxlJobExecutor.loadJobThread(triggerParam.getJobId());
+        //获取作业处理器
         IJobHandler jobHandler = jobThread!=null?jobThread.getHandler():null;
         String removeOldReason = null;
 
         // valid：jobHandler + jobThread
+        //获取任务运行模式
         GlueTypeEnum glueTypeEnum = GlueTypeEnum.match(triggerParam.getGlueType());
+        //任务以JobHandler方式维护在执行器端；需要结合 "JobHandler" 属性匹配执行器中任务；
         if (GlueTypeEnum.BEAN == glueTypeEnum) {
 
             // new jobhandler
+            //如果job处理器不一样,则kill旧处理器绑定的线程
             IJobHandler newJobHandler = XxlJobExecutor.loadJobHandler(triggerParam.getExecutorHandler());
 
             // valid old jobThread
+            //执行到这儿,要么新旧处理器不一致,要么没有绑定过任何线程
             if (jobThread!=null && jobHandler != newJobHandler) {
                 // change handler, need kill old thread
                 removeOldReason = "change jobhandler or glue type, and terminate the old job thread.";
@@ -69,6 +75,7 @@ public class ExecutorBizImpl implements ExecutorBiz {
             // valid handler
             if (jobHandler == null) {
                 jobHandler = newJobHandler;
+                //没找到处理器,直接返回异常
                 if (jobHandler == null) {
                     return new ReturnT<String>(ReturnT.FAIL_CODE, "job handler [" + triggerParam.getExecutorHandler() + "] not found.");
                 }
@@ -88,6 +95,7 @@ public class ExecutorBizImpl implements ExecutorBiz {
             }
 
             // valid handler
+            //获取任务阻塞策略
             if (jobHandler == null) {
                 try {
                     IJobHandler originJobHandler = GlueFactory.getInstance().loadNewInstance(triggerParam.getGlueSource());
@@ -139,11 +147,13 @@ public class ExecutorBizImpl implements ExecutorBiz {
         }
 
         // replace thread (new or exists invalid)
+        //作业没绑定过线程,则绑定作业到具体线程
         if (jobThread == null) {
             jobThread = XxlJobExecutor.registJobThread(triggerParam.getJobId(), jobHandler, removeOldReason);
         }
 
         // push data to queue
+        // 任务丢入线程处理
         ReturnT<String> pushResult = jobThread.pushTriggerQueue(triggerParam);
         return pushResult;
     }

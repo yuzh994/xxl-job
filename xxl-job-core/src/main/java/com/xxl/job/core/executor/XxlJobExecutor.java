@@ -64,20 +64,23 @@ public class XxlJobExecutor  {
     // ---------------------- start + stop ----------------------
     public void start() throws Exception {
 
-        // init logpath
+        // init logpath 初始化日志文件
         XxlJobFileAppender.initLogPath(logPath);
 
         // init invoker, admin-client
+        //初始化admin链接路径存储集合
         initAdminBizList(adminAddresses, accessToken);
 
 
         // init JobLogFileCleanThread
+        //清除过期日志
         JobLogFileCleanThread.getInstance().start(logRetentionDays);
 
         // init TriggerCallbackThread
+        // 回调调度中心任务执行状态
         TriggerCallbackThread.getInstance().start();
 
-        // init executor-server
+        // init executor-server 执行内嵌服务
         initEmbedServer(address, ip, port, appname, accessToken);
     }
     public void destroy(){
@@ -115,6 +118,7 @@ public class XxlJobExecutor  {
     private static List<AdminBiz> adminBizList;
     private void initAdminBizList(String adminAddresses, String accessToken) throws Exception {
         if (adminAddresses!=null && adminAddresses.trim().length()>0) {
+            //多个admin地址以,分隔
             for (String address: adminAddresses.trim().split(",")) {
                 if (address!=null && address.trim().length()>0) {
 
@@ -123,6 +127,7 @@ public class XxlJobExecutor  {
                     if (adminBizList == null) {
                         adminBizList = new ArrayList<AdminBiz>();
                     }
+                    ///将admin地址以及token添加adminBiz中
                     adminBizList.add(adminBiz);
                 }
             }
@@ -139,9 +144,11 @@ public class XxlJobExecutor  {
 
         // fill ip port
         port = port>0?port: NetUtil.findAvailablePort(9999);
+        //若没设置IP，则获取本机Ip
         ip = (ip!=null&&ip.trim().length()>0)?ip: IpUtil.getIp();
 
         // generate address
+        //构造地址,若没设置地址,则将ip,port拼接成地址
         if (address==null || address.trim().length()==0) {
             String ip_port_address = IpUtil.getIpPort(ip, port);   // registry-address：default use address to registry , otherwise use ip:port if address is null
             address = "http://{ip_port}/".replace("{ip_port}", ip_port_address);
@@ -153,6 +160,7 @@ public class XxlJobExecutor  {
         }
 
         // start
+        // 启动嵌入服务器 ,向服务端注册,以及监听端口,主要服务服务端调用。
         embedServer = new EmbedServer();
         embedServer.start(address, port, appname, accessToken);
     }
@@ -183,6 +191,7 @@ public class XxlJobExecutor  {
     // ---------------------- job thread repository ----------------------
     private static ConcurrentMap<Integer, JobThread> jobThreadRepository = new ConcurrentHashMap<Integer, JobThread>();
     public static JobThread registJobThread(int jobId, IJobHandler handler, String removeOldReason){
+        //绑定作业到具体线程，启动线程
         JobThread newJobThread = new JobThread(jobId, handler);
         newJobThread.start();
         logger.info(">>>>>>>>>>> xxl-job regist JobThread success, jobId:{}, handler:{}", new Object[]{jobId, handler});

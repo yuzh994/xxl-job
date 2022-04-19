@@ -81,11 +81,13 @@ public class EmbedServer {
                             .childOption(ChannelOption.SO_KEEPALIVE, true);
 
                     // bind
+                    // bind 异步绑定port上
                     ChannelFuture future = bootstrap.bind(port).sync();
 
                     logger.info(">>>>>>>>>>> xxl-job remoting server start success, nettype = {}, port = {}", EmbedServer.class, port);
 
                     // start registry
+                    //注册
                     startRegistry(appname, address);
 
                     // wait util stop
@@ -254,6 +256,7 @@ public class EmbedServer {
 
     public void startRegistry(final String appname, final String address) {
         // start registry
+        //向服务端注册,默认30秒执行一次
         ExecutorRegistryThread.getInstance().start(appname, address);
     }
 

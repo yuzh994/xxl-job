@@ -24,22 +24,35 @@ public class XxlJobScheduler  {
         // init i18n
         initI18n();
 
-        // admin trigger pool start
+
+        /**
+         * 初始化触发器线程池子
+         * 这里分别初始化了2个线程池，一个快一个慢，优先选择快，当一分钟以内任务超过10次执行时间超过500ms，则加入慢线程池执行。
+         */
         JobTriggerPoolHelper.toStart();
 
-        // admin registry monitor run
+        /**
+         * 30秒执行一次，维护注册表信息
+         * 初始化注册或者删除线程池，主要负责客户端注册或者销毁到xxl_job_registry表
+         * 剔除超时注册机器
+         * 更新xxl_job_group执行器地址列表
+         */
         JobRegistryHelper.getInstance().start();
 
         // admin fail-monitor run
+        //运行失败监听器，主要失败发送邮件，重试触发器
         JobFailMonitorHelper.getInstance().start();
 
         // admin lose-monitor run ( depend on JobTriggerPoolHelper )
+        //将丢失主机信息调度日志更改状态
         JobCompleteHelper.getInstance().start();
 
         // admin log report start
+        //统计一些失败成功报表
         JobLogReportHelper.getInstance().start();
 
         // start-schedule  ( depend on JobTriggerPoolHelper )
+        //执行调度器
         JobScheduleHelper.getInstance().start();
 
         logger.info(">>>>>>>>> init xxl-job admin success.");

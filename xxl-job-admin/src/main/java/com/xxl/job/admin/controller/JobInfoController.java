@@ -140,12 +140,15 @@ public class JobInfoController {
 	@RequestMapping("/trigger")
 	@ResponseBody
 	//@PermissionLimit(limit = false)
+	/**
+	 * *主动触发
+	 */
 	public ReturnT<String> triggerJob(int id, String executorParam, String addressList) {
 		// force cover job param
 		if (executorParam == null) {
 			executorParam = "";
 		}
-
+		//触发器类型，手动 ，重试次数，'执行器任务分片参数，格式如 1/2'，任务参数，机器地址
 		JobTriggerPoolHelper.trigger(id, TriggerTypeEnum.MANUAL, -1, null, executorParam, addressList);
 		return ReturnT.SUCCESS;
 	}

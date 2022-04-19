@@ -78,6 +78,7 @@ public class ExecutorRegistryThread {
 
                 // registry remove
                 try {
+                    //删除注册
                     RegistryParam registryParam = new RegistryParam(RegistryConfig.RegistType.EXECUTOR.name(), appname, address);
                     for (AdminBiz adminBiz: XxlJobExecutor.getAdminBizList()) {
                         try {
