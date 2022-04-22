@@ -39,7 +39,7 @@ public class SampleXxlJob {
         XxlJobHelper.log("XXL-JOB, Hello World.");
 
         logger.info("XXL-JOB, Hello World.");
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 10; i++) {
             XxlJobHelper.log("beat at:" + i);
             TimeUnit.SECONDS.sleep(2);
         }

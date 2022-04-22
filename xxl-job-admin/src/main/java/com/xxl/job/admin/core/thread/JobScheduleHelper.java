@@ -42,7 +42,7 @@ public class JobScheduleHelper {
         scheduleThread = new Thread(new Runnable() {
             @Override
             public void run() {
-
+                //*调度器
                 try {
                     //保证5秒执行一次
                     TimeUnit.MILLISECONDS.sleep(5000 - System.currentTimeMillis() % 1000);
@@ -387,5 +387,6 @@ public class JobScheduleHelper {
         }
         return null;
     }
+
 
 }
